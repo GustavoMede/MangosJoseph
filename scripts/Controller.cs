@@ -12,22 +12,31 @@ public class Controller : MonoBehaviour
     private bool estaNoChao;
     public float distanciaMinimaChao;
     private float pontos;
-    private float multiplicadorPontos = 4.5f;
+    private float highscore;
+    private float multiplicadorPontos = 9f;
     public Text pontosText;
+    public Text highscoreText;
     public Animator animatorComponent;
     public float limiarDeQueda = -3f;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
+    private void Start() {
+        apresentaHighscore();
+    }
+
+    private void apresentaHighscore() {
+        highscore = PlayerPrefs.GetFloat("HIGHSCORE");
+        if (highscore < 0) {
+            highscoreText.text = "";
+        } else {
+            highscoreText.text = "Recorde: " + Mathf.FloorToInt(highscore).ToString();
+        }
     }
 
     // Update is called once per frame
     private void Update()
     {
         pontos += Time.deltaTime * multiplicadorPontos;
-        pontosText.text = Mathf.FloorToInt(pontos).ToString();
+        pontosText.text = "Pontos: " + Mathf.FloorToInt(pontos).ToString();
         if (Input.GetKeyDown(KeyCode.UpArrow)) pular();
     }
 
@@ -45,7 +54,21 @@ public class Controller : MonoBehaviour
     }
 
     private void OnCollisionEnter2D(Collision2D other) {
-        if (other.gameObject.CompareTag("Inimigo")) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        configColisaoComInimigo(other);
+    }
+
+    private void configColisaoComInimigo(Collision2D other) {
+        if (other.gameObject.CompareTag("Inimigo")) {
+            atualizaEPersisteHighscore();
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+    }
+
+    private void atualizaEPersisteHighscore() {
+        if (pontos > highscore) {
+            highscore = pontos;
+            PlayerPrefs.SetFloat("HIGHSCORE", highscore);
+        }
     }
 
     private void validaPlayerNoChao() {
