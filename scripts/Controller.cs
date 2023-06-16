@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class Controller : MonoBehaviour
@@ -18,6 +17,10 @@ public class Controller : MonoBehaviour
     public Text highscoreText;
     public Animator animatorComponent;
     public float limiarDeQueda = -3f;
+    public AudioSource somPulo;
+    public AudioSource somFimDeJogo;
+    public AudioSource somAgachando;
+    public GameObject botaoReiniciar;
 
     private void Start() {
         apresentaHighscore();
@@ -38,19 +41,35 @@ public class Controller : MonoBehaviour
         pontos += Time.deltaTime * multiplicadorPontos;
         pontosText.text = "Pontos: " + Mathf.FloorToInt(pontos).ToString();
         if (Input.GetKeyDown(KeyCode.UpArrow)) pular();
+        if (Input.GetKeyDown(KeyCode.DownArrow)) {
+            agachar();
+        } else if (Input.GetKeyUp(KeyCode.DownArrow)) {
+            levantar();
+        }
     }
 
    private void pular() 
     {
         if (estaNoChao) {
             rigidBody.AddForce(Vector2.up * forcaPulo);
-            startAnimation("Pulando");
+            startAnimation("Pulando", true);
+            somPulo.Play();
         }
+    }
+
+    private void agachar() {
+        startAnimation("Andando", false);
+        startAnimation("Agachando", true);
+        somAgachando.Play();
+    }
+
+    private void levantar() {
+        startAnimation("Agachando", false);
     }
 
     private void FixedUpdate() {
         validaPlayerNoChao();
-        if (rigidBody.velocity.y < limiarDeQueda) startAnimation("Caindo");
+        if (rigidBody.velocity.y < limiarDeQueda && (animatorComponent.GetBool("Agachando") == false)) startAnimation("Caindo", true);
     }
 
     private void OnCollisionEnter2D(Collision2D other) {
@@ -60,7 +79,9 @@ public class Controller : MonoBehaviour
     private void configColisaoComInimigo(Collision2D other) {
         if (other.gameObject.CompareTag("Inimigo")) {
             atualizaEPersisteHighscore();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            somFimDeJogo.Play();
+            botaoReiniciar.SetActive(true);
+            Time.timeScale = 0;
         }
     }
 
@@ -73,17 +94,20 @@ public class Controller : MonoBehaviour
 
     private void validaPlayerNoChao() {
         estaNoChao = Physics2D.Raycast(transform.position, Vector2.down, distanciaMinimaChao, layerChao);
-        startAnimation("Andando");
+        if (estaNoChao && (animatorComponent.GetBool("Agachando") == false)) {
+            startAnimation("Andando", true);
+        }
     }
 
-    private void startAnimation(string animation) {
+    private void startAnimation(string animation, bool playAnimation) {
         invalidateAnimations();
-        animatorComponent.SetBool(animation, true);
+        animatorComponent.SetBool(animation, playAnimation);
     }
 
     private void invalidateAnimations() {
         animatorComponent.SetBool("Pulando", false);
         animatorComponent.SetBool("Caindo", false);
         animatorComponent.SetBool("Andando", false);
+        animatorComponent.SetBool("Agachando", false);
     }
 }
